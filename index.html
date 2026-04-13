@@ -3,42 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PasarKita - Anonymous Market</title>
+    <title>BeloMy - Malaysia Bicycle Market</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .post-card { border-bottom: 1px solid #eee; }
-        .btn-orange { background-color: #f97316; }
+        .post-card { border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: pointer; }
+        .post-card:active { background-color: #f9fafb; }
+        #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .category-item { cursor: pointer; padding: 12px 16px; border-radius: 8px; font-weight: 600; color: #374151; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .category-item:hover { background: #fff7ed; color: #f97316; }
+        .sub-menu { padding-left: 24px; margin-bottom: 8px; display: none; border-left: 2px solid #fed7aa; margin-left: 16px; }
+        .sub-menu.active { display: block; }
+        .sub-item { padding: 8px 12px; font-size: 0.85rem; color: #6b7280; cursor: pointer; border-radius: 6px; }
+        .sub-item:hover { color: #f97316; background: #fff7ed; }
     </style>
 </head>
-<body class="bg-gray-100 pb-20">
+<body class="bg-gray-50 pb-20 overflow-x-hidden">
 
-    <header class="bg-white p-4 shadow-sm sticky top-0 z-10">
-        <h1 class="text-2xl font-bold text-orange-500 text-center italic">PasarKita 🏛️</h1>
-        <p class="text-[10px] text-center text-gray-400 uppercase tracking-widest">Anonymous Marketplace</p>
+    <header class="bg-white p-4 shadow-sm sticky top-0 z-30 flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="text-2xl p-1 text-gray-700">☰</button>
+        <h1 class="text-2xl font-black text-orange-500 italic tracking-tighter">BeloMy</h1>
+        <div class="relative flex-grow">
+            <input type="text" id="searchInput" onkeyup="searchPosts()" placeholder="Search bikes..." class="w-full bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
     </header>
 
-    <main id="post-list" class="max-w-md mx-auto bg-white min-h-screen shadow-lg">
-        </main>
-
-    <button onclick="openModal()" class="fixed bottom-6 right-6 bg-orange-500 text-white w-14 h-14 rounded-full shadow-2xl text-3xl font-bold hover:scale-110 transition-transform">+</button>
-
-    <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-20">
-        <div class="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">New Listing</h2>
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white z-40 shadow-2xl transform -translate-x-full p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="font-extrabold text-2xl text-gray-900">Market Menu</h2>
+            <button onclick="toggleSidebar()" class="text-3xl text-gray-300 hover:text-gray-500">&times;</button>
+        </div>
+        
+        <nav class="space-y-1">
+            <div class="category-item border-b border-gray-100 mb-2" onclick="filterCategory('All')">🏠 ALL LISTINGS</div>
             
-            <div class="grid grid-cols-2 gap-2 mb-3">
-                <input type="text" id="nickname" placeholder="Nickname" class="border p-3 rounded-lg text-sm bg-gray-50">
-                <input type="password" id="pw" placeholder="Password" class="border p-3 rounded-lg text-sm bg-gray-50">
+            <div class="category-item" onclick="filterCategory('Road')">🚲 ROAD</div>
+
+            <div class="category-item" onclick="handleCategory('Fixie', 'fixie')">⚙️ FIXIE <span>▼</span></div>
+            <div id="fixie-sub" class="sub-menu">
+                <div class="sub-item" onclick="filterCategory('Crit')">• Crit Frameset</div>
+                <div class="sub-item" onclick="filterCategory('Track')">• Track Frameset</div>
+            </div>
+
+            <div class="category-item" onclick="handleCategory('MTB', 'mtb')">🚵 MTB <span>▼</span></div>
+            <div id="mtb-sub" class="sub-menu">
+                <div class="sub-item" onclick="filterCategory('Full-Sus')">• Full Suspension</div>
+                <div class="sub-item" onclick="filterCategory('Hardtail')">• Hardtail</div>
+                <div class="sub-item" onclick="filterCategory('Urban')">• Urban</div>
+                <div class="sub-item" onclick="filterCategory('BMX')">• BMX</div>
+            </div>
+
+            <div class="category-item" onclick="filterCategory('Hybrid')">🛹 HYBRID</div>
+            <div class="category-item" onclick="filterCategory('Minivelo')">🚲 MINIVELO</div>
+            <div class="category-item" onclick="filterCategory('E-Bike')">⚡ E-BIKE</div>
+        </nav>
+    </div>
+
+    <main id="post-list" class="max-w-md mx-auto bg-white min-h-screen border-x border-gray-100">
+        <div class="p-10 text-center text-gray-400">Loading catalog...</div>
+    </main>
+
+    <button onclick="openModal()" class="fixed bottom-6 right-6 bg-orange-500 text-white w-14 h-14 rounded-full shadow-2xl text-3xl font-bold hover:rotate-90 transition-all z-20">+</button>
+
+    <div id="modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-5 text-gray-800">New Listing</h2>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <input type="text" id="nickname" placeholder="Nickname" class="border-2 border-gray-100 p-3 rounded-xl text-sm focus:border-orange-500 outline-none">
+                <input type="password" id="pw" placeholder="Password" class="border-2 border-gray-100 p-3 rounded-xl text-sm focus:border-orange-500 outline-none">
             </div>
             
-            <input type="text" id="title" placeholder="Item Name" class="w-full border p-3 rounded-lg mb-2 font-bold">
-            <input type="number" id="price" placeholder="Price (RM)" class="w-full border p-3 rounded-lg mb-2">
-            <input type="text" id="imgUrl" placeholder="Image Link (URL)" class="w-full border p-3 rounded-lg mb-2 text-sm">
-            <textarea id="desc" placeholder="Details & Contact (e.g. WhatsApp)" class="w-full border p-3 rounded-lg mb-4 text-sm" rows="3"></textarea>
+            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">CATEGORY</label>
+            <select id="categorySelect" class="w-full border-2 border-gray-100 p-3 rounded-xl mb-3 text-sm bg-gray-50 outline-none">
+                <option value="Road">Road</option>
+                <option value="Crit">Fixie (Crit)</option>
+                <option value="Track">Fixie (Track)</option>
+                <option value="Full-Sus">MTB (Full-Sus)</option>
+                <option value="Hardtail">MTB (Hardtail)</option>
+                <option value="Urban">MTB (Urban)</option>
+                <option value="BMX">BMX</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="Minivelo">Minivelo</option>
+                <option value="E-Bike">E-Bike</option>
+            </select>
+
+            <input type="text" id="title" placeholder="What bike is it?" class="w-full border-2 border-gray-100 p-3 rounded-xl mb-3 font-bold">
+            <input type="number" id="price" placeholder="Price (RM)" class="w-full border-2 border-gray-100 p-3 rounded-xl mb-3">
+            <input type="text" id="imgUrl" placeholder="Image URL (Right click image -> copy address)" class="w-full border-2 border-gray-100 p-3 rounded-xl mb-3 text-sm">
+            <textarea id="desc" placeholder="Size, Specs, Condition, WhatsApp/Telegram Link..." class="w-full border-2 border-gray-100 p-3 rounded-xl mb-5 text-sm" rows="4"></textarea>
             
-            <div class="flex gap-2">
-                <button onclick="closeModal()" class="flex-1 bg-gray-200 p-4 rounded-xl font-bold text-gray-600">Cancel</button>
-                <button onclick="uploadPost()" class="flex-1 bg-orange-500 text-white p-4 rounded-xl font-bold">Post Now</button>
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="flex-1 bg-gray-100 p-4 rounded-2xl font-bold text-gray-500">Close</button>
+                <button onclick="uploadPost()" class="flex-1 bg-orange-500 text-white p-4 rounded-2xl font-bold shadow-lg shadow-orange-200">Post Now</button>
             </div>
         </div>
     </div>
@@ -59,63 +114,104 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        let allPosts = [];
 
         onValue(ref(db, 'posts'), (snapshot) => {
-            const postList = document.getElementById('post-list');
-            postList.innerHTML = "";
             const data = snapshot.val();
-            if (data) {
-                Object.entries(data).reverse().forEach(([id, post]) => {
-                    const html = `
-                        <div class="post-card p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-xs font-bold text-blue-600">${post.nickname || 'Anonymous'}</span>
-                                <button onclick="deletePost('${id}', '${post.pw}')" class="text-xs text-gray-300 hover:text-red-500">Delete</button>
-                            </div>
-                            <img src="${post.imgUrl || 'https://via.placeholder.com/400x250?text=No+Image'}" class="w-full h-48 object-cover rounded-xl mb-3 shadow-inner">
-                            <h3 class="font-bold text-lg text-gray-900">${post.title}</h3>
-                            <p class="text-orange-500 font-extrabold text-xl mb-1">${post.price} RM</p>
-                            <p class="text-gray-500 text-sm leading-relaxed">${post.desc}</p>
-                        </div>
-                    `;
-                    postList.insertAdjacentHTML('beforeend', html);
-                });
-            }
+            allPosts = data ? Object.entries(data).reverse() : [];
+            renderPosts(allPosts);
         });
+
+        function renderPosts(posts) {
+            const postList = document.getElementById('post-list');
+            if (posts.length === 0) {
+                postList.innerHTML = '<div class="p-20 text-center text-gray-400">No bikes found in this category.</div>';
+                return;
+            }
+            postList.innerHTML = posts.map(([id, post]) => `
+                <div class="post-card p-4 flex gap-4 items-center">
+                    <div class="relative">
+                        <img src="${post.imgUrl || 'https://via.placeholder.com/300?text=No+Photo'}" class="w-28 h-28 object-cover rounded-2xl bg-gray-100">
+                        <span class="absolute top-1 left-1 text-[9px] font-black bg-white/90 text-orange-600 px-1.5 py-0.5 rounded-md shadow-sm uppercase">${post.category || 'Road'}</span>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">${post.nickname}</span>
+                            <button onclick="deletePost('${id}', '${post.pw}')" class="text-gray-300 hover:text-red-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <h3 class="font-bold text-gray-800 text-base leading-tight mt-0.5 line-clamp-2">${post.title}</h3>
+                        <p class="text-orange-600 font-extrabold text-xl mt-1">${post.price} <span class="text-xs">RM</span></p>
+                        <p class="text-[10px] text-gray-300 mt-1 italic">${new Date(post.time).toLocaleDateString()}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Logic for Filter & Sidebar Toggle
+        window.handleCategory = function(mainCat, subId) {
+            // Filter posts for the main category (Fixie or MTB)
+            // This checks if the post category is one of the sub-categories or matches main
+            let filtered;
+            if (mainCat === 'Fixie') {
+                filtered = allPosts.filter(([id, post]) => ['Crit', 'Track'].includes(post.category));
+            } else if (mainCat === 'MTB') {
+                filtered = allPosts.filter(([id, post]) => ['Full-Sus', 'Hardtail', 'Urban', 'BMX'].includes(post.category));
+            }
+            renderPosts(filtered);
+
+            // Toggle sub-menu visibility
+            const sub = document.getElementById(subId + '-sub');
+            const isActive = sub.classList.contains('active');
+            document.querySelectorAll('.sub-menu').forEach(el => el.classList.remove('active'));
+            if (!isActive) sub.classList.add('active');
+        };
+
+        window.filterCategory = function(cat) {
+            toggleSidebar();
+            if(cat === 'All') return renderPosts(allPosts);
+            const filtered = allPosts.filter(([id, post]) => post.category === cat);
+            renderPosts(filtered);
+        };
+
+        window.searchPosts = function() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allPosts.filter(([id, post]) => 
+                post.title.toLowerCase().includes(val) || 
+                post.desc.toLowerCase().includes(val)
+            );
+            renderPosts(filtered);
+        };
 
         window.uploadPost = function() {
             const postData = {
                 nickname: document.getElementById('nickname').value || "Anonymous",
                 pw: document.getElementById('pw').value,
+                category: document.getElementById('categorySelect').value,
                 title: document.getElementById('title').value,
                 price: document.getElementById('price').value,
                 imgUrl: document.getElementById('imgUrl').value,
                 desc: document.getElementById('desc').value,
                 time: Date.now()
             };
-
-            if (!postData.pw) return alert("Please set a password to manage your post!");
-            if (!postData.title || !postData.price) return alert("Item name and price are required!");
-
-            push(ref(db, 'posts'), postData).then(() => {
-                closeModal();
-                alert("Listed!");
-            });
+            if (!postData.pw || !postData.title || !postData.price) return alert("Nickname, Password, Title, and Price are required!");
+            push(ref(db, 'posts'), postData).then(() => { closeModal(); alert("Successfully Listed!"); });
         };
 
         window.deletePost = function(id, correctPw) {
-            const inputPw = prompt("Enter password to delete this post:");
+            const inputPw = prompt("Enter password to delete:");
             if (inputPw === correctPw) {
-                if(confirm("Delete this listing?")) {
-                    remove(ref(db, `posts/${id}`));
-                }
-            } else {
-                alert("Wrong password!");
-            }
+                if(confirm("Delete this bike listing?")) remove(ref(db, `posts/${id}`));
+            } else { alert("Incorrect password!"); }
         };
     </script>
 
     <script>
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.style.transform = sb.style.transform === 'translateX(0px)' ? 'translateX(-100%)' : 'translateX(0px)';
+        }
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     </script>
