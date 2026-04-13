@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PasarKita - Anonymous Market</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .post-card { border-bottom: 1px solid #eee; }
+        .btn-orange { background-color: #f97316; }
+    </style>
+</head>
+<body class="bg-gray-100 pb-20">
+
+    <header class="bg-white p-4 shadow-sm sticky top-0 z-10">
+        <h1 class="text-2xl font-bold text-orange-500 text-center italic">PasarKita 🏛️</h1>
+        <p class="text-[10px] text-center text-gray-400 uppercase tracking-widest">Anonymous Marketplace</p>
+    </header>
+
+    <main id="post-list" class="max-w-md mx-auto bg-white min-h-screen shadow-lg">
+        </main>
+
+    <button onclick="openModal()" class="fixed bottom-6 right-6 bg-orange-500 text-white w-14 h-14 rounded-full shadow-2xl text-3xl font-bold hover:scale-110 transition-transform">+</button>
+
+    <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-20">
+        <div class="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">New Listing</h2>
+            
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <input type="text" id="nickname" placeholder="Nickname" class="border p-3 rounded-lg text-sm bg-gray-50">
+                <input type="password" id="pw" placeholder="Password" class="border p-3 rounded-lg text-sm bg-gray-50">
+            </div>
+            
+            <input type="text" id="title" placeholder="Item Name" class="w-full border p-3 rounded-lg mb-2 font-bold">
+            <input type="number" id="price" placeholder="Price (RM)" class="w-full border p-3 rounded-lg mb-2">
+            <input type="text" id="imgUrl" placeholder="Image Link (URL)" class="w-full border p-3 rounded-lg mb-2 text-sm">
+            <textarea id="desc" placeholder="Details & Contact (e.g. WhatsApp)" class="w-full border p-3 rounded-lg mb-4 text-sm" rows="3"></textarea>
+            
+            <div class="flex gap-2">
+                <button onclick="closeModal()" class="flex-1 bg-gray-200 p-4 rounded-xl font-bold text-gray-600">Cancel</button>
+                <button onclick="uploadPost()" class="flex-1 bg-orange-500 text-white p-4 rounded-xl font-bold">Post Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAaVsdLFFISNdGBBTUvW3_tsOa-svpBTsk",
+            authDomain: "pasarkita-a108e.firebaseapp.com",
+            databaseURL: "https://pasarkita-a108e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pasarkita-a108e",
+            storageBucket: "pasarkita-a108e.appspot.com",
+            messagingSenderId: "646605478624",
+            appId: "1:646605478624:web:30a46dcf51af08914bce85"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        onValue(ref(db, 'posts'), (snapshot) => {
+            const postList = document.getElementById('post-list');
+            postList.innerHTML = "";
+            const data = snapshot.val();
+            if (data) {
+                Object.entries(data).reverse().forEach(([id, post]) => {
+                    const html = `
+                        <div class="post-card p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-blue-600">${post.nickname || 'Anonymous'}</span>
+                                <button onclick="deletePost('${id}', '${post.pw}')" class="text-xs text-gray-300 hover:text-red-500">Delete</button>
+                            </div>
+                            <img src="${post.imgUrl || 'https://via.placeholder.com/400x250?text=No+Image'}" class="w-full h-48 object-cover rounded-xl mb-3 shadow-inner">
+                            <h3 class="font-bold text-lg text-gray-900">${post.title}</h3>
+                            <p class="text-orange-500 font-extrabold text-xl mb-1">${post.price} RM</p>
+                            <p class="text-gray-500 text-sm leading-relaxed">${post.desc}</p>
+                        </div>
+                    `;
+                    postList.insertAdjacentHTML('beforeend', html);
+                });
+            }
+        });
+
+        window.uploadPost = function() {
+            const postData = {
+                nickname: document.getElementById('nickname').value || "Anonymous",
+                pw: document.getElementById('pw').value,
+                title: document.getElementById('title').value,
+                price: document.getElementById('price').value,
+                imgUrl: document.getElementById('imgUrl').value,
+                desc: document.getElementById('desc').value,
+                time: Date.now()
+            };
+
+            if (!postData.pw) return alert("Please set a password to manage your post!");
+            if (!postData.title || !postData.price) return alert("Item name and price are required!");
+
+            push(ref(db, 'posts'), postData).then(() => {
+                closeModal();
+                alert("Listed!");
+            });
+        };
+
+        window.deletePost = function(id, correctPw) {
+            const inputPw = prompt("Enter password to delete this post:");
+            if (inputPw === correctPw) {
+                if(confirm("Delete this listing?")) {
+                    remove(ref(db, `posts/${id}`));
+                }
+            } else {
+                alert("Wrong password!");
+            }
+        };
+    </script>
+
+    <script>
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
